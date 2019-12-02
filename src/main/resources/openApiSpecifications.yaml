@@ -1,0 +1,226 @@
+openapi: 3.0.0
+info:
+  version: 1.0.0
+  title: PRISMA backend
+  license:
+    name: GNU General Public License v3.0
+servers:
+  - url: 'http://petstore.swagger.io/v1'
+paths:
+  /schedule:
+    get:
+      summary: Retrives a list of dates from the schedule.
+      operationId: listDates
+      tags:
+        - schedule
+      parameters:
+        - name: dateStart
+          in: query
+          description: >-
+            Date representing the beginning of the search. Default is the date
+            of tomorrow. (Format dd-MMM-yyy)
+          required: false
+          schema:
+            type: string
+            format: date
+        - name: daysRange
+          in: query
+          description: Amount of days to be queried.
+          required: false
+          schema:
+            type: integer
+            format: int32
+            minimum: 1
+            maximum: 365
+            default: 30
+      responses:
+        '200':
+          description: A list of dates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Date'
+        '400':
+          description: Bad request. Date range do not respect the requirements
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+  /bookings:
+    post:
+      summary: Submit a new booking
+      operationId: submitBooking
+      tags:
+        - bookings
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: '#/components/schemas/Booking'
+      responses:
+        '201':
+          description: Expected response to a valid request. The booking has been created
+          content:
+            application/json:
+              schema:
+                type: integer
+        '404':
+          description: The referred booking do not exist.
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+
+  /bookings/{bookingId}:
+    get:
+      summary: Info for a specific booking
+      operationId: showBooking
+      tags:
+        - bookings
+      parameters:
+        - $ref: '#/components/parameters/bookingIdParam'
+      responses:
+        '200':
+          description: Expected response to a valid request.
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Booking'
+        '404':
+          description: The referred bookingId do not exist.
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    patch:
+      summary: Patch a specific booking
+      operationId: patchBooking
+      tags:
+        - bookings
+      parameters:
+        - $ref: '#/components/parameters/bookingIdParam'
+      requestBody:
+        content:
+          application/json:
+            schema:
+              type: object
+              properties:
+                fullName:
+                  type: string
+                email:
+                  type: string
+                  format: email
+                dateStart:
+                  type: string
+                  format: date
+                range:
+                  type: integer
+                  format: int32
+                  minimum: 1
+                  maximum: 3
+                  default: 1
+      responses:
+        '200':
+          description: Expected response to a valid request.
+        '404':
+          description: The referred bookingId do not exist.
+        '409':
+          description: Conflict of dates. The following dates are not available
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: '#/components/schemas/Date'
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+    delete:
+      summary: Delete a specific booking
+      operationId: deleteBooking
+      tags:
+        - bookings
+      parameters:
+        - $ref: '#/components/parameters/bookingIdParam'
+      responses:
+        '200':
+          description: Expected response to a valid request.
+        '404':
+          description: The referred bookingId do not exist.
+        default:
+          description: unexpected error
+          content:
+            application/json:
+              schema:
+                $ref: '#/components/schemas/Error'
+components:
+  #-------------------------------
+  # Reusable schemas (data models)
+  #-------------------------------
+  schemas:
+    Booking: # Can be referenced via '#/components/schemas/Booking'
+      type: object
+      required:
+        - fullName
+        - email
+        - dateStart
+      properties:
+        fullName:
+          type: string
+        email:
+          type: string
+          format: email
+        dateStart:
+          type: string
+          format: date
+        range:
+          type: integer
+          format: int32
+          minimum: 1
+          maximum: 3
+          default: 1
+    Date: # Can be referenced via '#/components/schemas/Date'
+      type: object
+      required:
+        - date
+        - isBooked
+      properties:
+        date:
+          type: string
+          format: date
+        isBooked:
+          type: boolean
+    Error: # Can be referenced via '#/components/schemas/Error'
+      type: object
+      required:
+        - code
+        - message
+      properties:
+        code:
+          type: integer
+          format: int32
+        message:
+          type: string
+  #-------------------------------
+  # Reusable operation parameters
+  #-------------------------------
+  parameters:
+    bookingIdParam:      # Can be referenced via '#/components/parameters/bookingIdParam'
+      name: bookingId
+      in: path
+      description: The unique id of a booking.
+      required: true
+      schema:
+        type: string
